@@ -25,26 +25,26 @@ Claude Code 的自訂 statusline，風格參考 Powerlevel10k，使用 truecolor
 - 最後一個 prompt 的執行時間：執行中 `⏳/⌛` 每秒翻轉並即時計時（金色），完成後顯示 `🏁`（紫色）
 - 最後一個 prompt 內容，最多 3 行、每行 80 字
 
-## 安裝
+## 安裝（每台電腦）
 
-需求：`bash`、`jq`、`git`、`curl`；macOS 會從 keychain 讀取 Claude Code 的 OAuth token（其他平台讀 `~/.claude/.credentials.json`）以查詢模型專屬用量，讀不到時自動退回 payload 內的數字。
+需求：`bash`、`jq`、`git`、`curl`。macOS 會從 keychain 讀取 Claude Code 的 OAuth token（其他平台讀 `~/.claude/.credentials.json`），用來查詢模型專屬用量；讀不到時自動退回 payload 內的數字。
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/Lorex/.claude-statusline/main/statusline.sh -o ~/.claude/statusline.sh
+git clone https://github.com/Lorex/.claude-statusline.git ~/.claude-statusline
+~/.claude-statusline/install.sh
 ```
 
-在 `~/.claude/settings.json` 加入：
+`install.sh` 會：
 
-```json
-{
-  "statusLine": {
-    "type": "command",
-    "command": "bash \"$HOME/.claude/statusline.sh\"",
-    "refreshInterval": 1
-  }
-}
-```
+- 把 `~/.claude/statusline.sh` 換成指向 clone 的 symlink（舊檔備份成 `.bak.<時間>`）
+- 在 `~/.claude/settings.json` 設定 `statusLine`（含 `refreshInterval: 1`，讓 prompt 計時器每秒更新），修改前會先備份
 
-`refreshInterval: 1` 讓 prompt 計時器在執行中每秒更新；不需要的話可以拿掉，statusline 仍會在事件發生時刷新。
+可以重複執行。clone 放在其他位置也沒問題，symlink 會指向實際所在的目錄。
+
+## 多台電腦同步
+
+- **自動拉取**：statusline 每小時在背景對自己所在的 repo 跑一次 `git pull --ff-only`，所以別台 push 的更新最多一小時內就會出現。本地有未 push 的 commit 或衝突時只會跳過，不會覆蓋。
+- **推送修改**：在任一台改完 `statusline.sh` 後，手動 commit + push。
+- 想立刻同步：`git -C ~/.claude-statusline pull`
 
 快取與除錯檔案放在 `~/.claude/cache/`（`last_payload.json` 保存最近一次收到的 payload，方便查欄位）。

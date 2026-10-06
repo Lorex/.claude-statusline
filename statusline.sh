@@ -9,6 +9,22 @@ input=$(cat)
 mkdir -p "$HOME/.claude/cache" 2>/dev/null
 printf '%s' "$input" > "$HOME/.claude/cache/last_payload.json" 2>/dev/null
 
+# ---------- self-update: hourly background fast-forward of the repo this script lives in ----------
+# ~/.claude/statusline.sh is a symlink into a git clone, so every machine picks up
+# pushed changes without a manual pull. --ff-only never touches diverged/dirty work.
+self_path="$0"
+[ -L "$self_path" ] && self_path=$(readlink "$self_path")
+self_repo=$(cd "$(dirname "$self_path")" 2>/dev/null && pwd)
+update_marker="$HOME/.claude/cache/statusline_update.attempt"
+if [ -n "$self_repo" ] && [ -d "$self_repo/.git" ]; then
+  m=$(stat -f %m "$update_marker" 2>/dev/null || stat -c %Y "$update_marker" 2>/dev/null)
+  case "$m" in ''|*[!0-9]*) m=0 ;; esac
+  if [ $(( $(date +%s) - m )) -ge 3600 ]; then
+    touch "$update_marker" 2>/dev/null
+    ( GIT_TERMINAL_PROMPT=0 git -C "$self_repo" pull --ff-only --quiet >/dev/null 2>&1 & ) 2>/dev/null
+  fi
+fi
+
 # ---------- one batched jq call for the simple stdin fields ----------
 # \x1f (unit separator) instead of \t: tab is IFS whitespace, so empty fields
 # would collapse and shift every later field.
